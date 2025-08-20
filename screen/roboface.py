@@ -3,7 +3,7 @@ import math
 import time
 import random
 import numpy as np
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 from dataclasses import dataclass
 
 @dataclass
@@ -21,6 +21,23 @@ class FaceParams:
     eye_color: Tuple[int, int, int] = (0, 255, 255)  # cyan
     corner_radius: int = 8
 
+@dataclass
+class Tear:
+    x: float
+    y: float
+    speed: float
+    size: float
+    alpha: float = 255
+
+@dataclass
+class Sparkle:
+    x: float
+    y: float
+    size: float
+    rotation: float
+    life: float
+    max_life: float
+
 class RoboFace:
     def __init__(self):
         pygame.init()
@@ -30,7 +47,7 @@ class RoboFace:
         self.width = 800
         self.height = 600
         self.screen = pygame.display.set_mode((self.width + 300, self.height + 200))
-        pygame.display.set_caption("RoboFace")
+        pygame.display.set_caption("RoboFace - Dramatic Edition")
         
         # State
         self.eye_state = EyeState()
@@ -46,14 +63,75 @@ class RoboFace:
         self.running = True
         self.clock = pygame.time.Clock()
         
-        # Expression definitions
+        # Dramatic effects
+        self.tears: List[Tear] = []
+        self.sparkles: List[Sparkle] = []
+        self.last_tear = 0
+        self.last_sparkle = 0
+        self.eyebrow_anger = 0.0  # Animation for angry eyebrows
+        
+        # Enhanced expression definitions
         self.expressions = {
-            'neutral': {'eye_height': 60, 'brightness': 1.0, 'eye_offset': 0},
-            'happy': {'eye_height': 45, 'brightness': 1.2, 'eye_offset': -8},
-            'sad': {'eye_height': 70, 'brightness': 0.7, 'eye_offset': 12},
-            'angry': {'eye_height': 40, 'brightness': 1.5, 'eye_offset': -5},
-            'surprised': {'eye_height': 80, 'brightness': 1.3, 'eye_offset': 0},
-            'sleepy': {'eye_height': 20, 'brightness': 0.5, 'eye_offset': 8}
+            'neutral': {
+                'eye_height': 60, 
+                'brightness': 1.0, 
+                'eye_offset': 0,
+                'eye_curve': 0,
+                'has_tears': False,
+                'has_sparkles': False,
+                'has_eyebrows': False,
+                'eyebrow_angle': 0
+            },
+            'happy': {
+                'eye_height': 35, 
+                'brightness': 1.5, 
+                'eye_offset': -12,
+                'eye_curve': 0.6,  # Makes eyes curved/squinted
+                'has_tears': False,
+                'has_sparkles': True,
+                'has_eyebrows': False,
+                'eyebrow_angle': 0
+            },
+            'sad': {
+                'eye_height': 70, 
+                'brightness': 0.6, 
+                'eye_offset': 15,
+                'eye_curve': -0.3,  # Droopy eyes
+                'has_tears': True,
+                'has_sparkles': False,
+                'has_eyebrows': True,
+                'eyebrow_angle': 0.3  # Slightly angled down
+            },
+            'angry': {
+                'eye_height': 40, 
+                'brightness': 1.8, 
+                'eye_offset': -8,
+                'eye_curve': 0,
+                'has_tears': False,
+                'has_sparkles': False,
+                'has_eyebrows': True,
+                'eyebrow_angle': -0.8  # Strong downward angle
+            },
+            'surprised': {
+                'eye_height': 90, 
+                'brightness': 1.4, 
+                'eye_offset': -5,
+                'eye_curve': 0,
+                'has_tears': False,
+                'has_sparkles': True,
+                'has_eyebrows': True,
+                'eyebrow_angle': 0.5  # Raised eyebrows
+            },
+            'sleepy': {
+                'eye_height': 15, 
+                'brightness': 0.4, 
+                'eye_offset': 10,
+                'eye_curve': 0.8,  # Very squinted
+                'has_tears': False,
+                'has_sparkles': False,
+                'has_eyebrows': True,
+                'eyebrow_angle': 0.2  # Relaxed eyebrows
+            }
         }
         
         # Color presets
@@ -166,6 +244,65 @@ class RoboFace:
         pygame.draw.circle(surface, color, (rect.x + radius, rect.y + rect.height - radius), radius)
         pygame.draw.circle(surface, color, (rect.x + rect.width - radius, rect.y + rect.height - radius), radius)
 
+    def draw_curved_eye(self, surface, x: int, y: int, width: int, height: int, blink: float, brightness: float, curve: float):
+        """Draw a curved eye for dramatic expressions"""
+        actual_height = int(height * (1 - blink))
+        
+        if actual_height <= 5:
+            return
+        
+        # Ensure dimensions are positive
+        if width <= 0 or actual_height <= 0:
+            return
+        
+        # Create curved eye shape
+        if abs(curve) > 0.1:
+            # Create a surface for the curved eye
+            eye_surface = pygame.Surface((width + 20, actual_height + 20), pygame.SRCALPHA)
+            
+            if curve > 0:  # Happy/squinted curve
+                # Draw multiple arcs to create a curved effect
+                for i in range(5):
+                    arc_height = actual_height - (i * 2)
+                    if arc_height <= 0:
+                        break
+                    arc_y = 10 + i
+                    
+                    # Create gradient effect
+                    alpha = int(255 * (1 - i * 0.2))
+                    alpha = max(0, min(255, alpha))
+                    color = (*self.face_params.eye_color, alpha)
+                    
+                    if width <= 0 or arc_height <= 0:
+                        continue
+                    arc_surface = pygame.Surface((width, arc_height), pygame.SRCALPHA)
+                    self.draw_rounded_rect(arc_surface, color, pygame.Rect(0, 0, width, arc_height), self.face_params.corner_radius)
+                    eye_surface.blit(arc_surface, (10, arc_y))
+            
+            else:  # Sad/droopy curve
+                # Draw droopy eye shape
+                for i in range(3):
+                    droop_offset = int(i * 3 * abs(curve))
+                    droop_height = actual_height - droop_offset
+                    if droop_height <= 0:
+                        break
+                    
+                    alpha = int(255 * (1 - i * 0.3))
+                    alpha = max(0, min(255, alpha))
+                    color = (*self.face_params.eye_color, alpha)
+                    
+                    if width <= 0 or droop_height <= 0:
+                        continue
+                    arc_surface = pygame.Surface((width, droop_height), pygame.SRCALPHA)
+                    self.draw_rounded_rect(arc_surface, color, pygame.Rect(0, 0, width, droop_height), self.face_params.corner_radius)
+                    eye_surface.blit(arc_surface, (10, 10 + droop_offset))
+            
+            surface.blit(eye_surface, (x - width//2 - 10, y - actual_height//2 - 10))
+        
+        else:
+            # Regular eye
+            self.draw_eye(surface, x, y, width, height, blink, brightness)
+
     def draw_eye(self, surface, x: int, y: int, width: int, height: int, blink: float, brightness: float):
         """Draw a single eye"""
         actual_height = int(height * (1 - blink))
@@ -182,9 +319,9 @@ class RoboFace:
         glow_intensity = brightness * 0.8
         eye_color = self.face_params.eye_color
         
-        for i in range(3, -1, -1):
-            alpha = int((glow_intensity * (4 - i)) / 4 * 255)
-            size = 1 + (i * 0.1)
+        for i in range(4, -1, -1):
+            alpha = int((glow_intensity * (5 - i)) / 5 * 255)
+            size = 1 + (i * 0.15)
             
             glow_width = int(width * size)
             glow_height = int(actual_height * size)
@@ -205,16 +342,330 @@ class RoboFace:
         highlight_rect = pygame.Rect(x - highlight_width//2, y - highlight_height//2 - int(actual_height * 0.1), highlight_width, highlight_height)
         
         highlight_surface = pygame.Surface((highlight_width, highlight_height), pygame.SRCALPHA)
-        highlight_color = (255, 255, 255, 64)
+        highlight_color = (255, 255, 255, 80)
         self.draw_rounded_rect(highlight_surface, highlight_color, pygame.Rect(0, 0, highlight_width, highlight_height), int(self.face_params.corner_radius * 0.7))
         surface.blit(highlight_surface, highlight_rect.topleft)
+
+    def draw_eyebrows(self, surface, left_eye_x: int, right_eye_x: int, eye_y: int, angle: float):
+        """Draw dramatic eyebrows for expressions"""
+        eyebrow_length = self.face_params.eye_width + 20
+        eyebrow_height = 8
+        eyebrow_offset_y = -self.face_params.eye_height // 2 - 15
         
-        # Outer border
-        border_color = (*eye_color, 128)
-        border_surface = pygame.Surface((width + 4, actual_height + 4), pygame.SRCALPHA)
-        border_rect = pygame.Rect(2, 2, width, actual_height)
-        pygame.draw.rect(border_surface, border_color, border_rect, 2, border_radius=self.face_params.corner_radius)
-        surface.blit(border_surface, (x - width//2 - 2, y - actual_height//2 - 2))
+        # Safety checks
+        if eyebrow_length <= 0 or eyebrow_height <= 0:
+            return
+        
+        # Animate eyebrow intensity for angry expression
+        if self.expression == 'angry':
+            self.eyebrow_anger = min(1.0, self.eyebrow_anger + 0.05)
+            intensity = self.eyebrow_anger
+        else:
+            self.eyebrow_anger = max(0.0, self.eyebrow_anger - 0.02)
+            intensity = 1.0
+        
+        # Calculate eyebrow colors
+        base_color = self.face_params.eye_color
+        eyebrow_color = (
+            min(255, int(base_color[0] * 1.2 * intensity)),
+            min(255, int(base_color[1] * 1.2 * intensity)),
+            min(255, int(base_color[2] * 1.2 * intensity))
+        )
+        
+        # Left eyebrow (mirrored angle)
+        left_center_x = left_eye_x
+        left_center_y = eye_y + eyebrow_offset_y
+        
+        # Create triangular eyebrow shape
+        angle_rad = angle * intensity
+        
+        # Left eyebrow points
+        left_inner_x = left_center_x + eyebrow_length // 3
+        left_outer_x = left_center_x - eyebrow_length // 3
+        left_inner_y = left_center_y - int(eyebrow_length * angle_rad * 0.3)
+        left_outer_y = left_center_y + int(eyebrow_length * angle_rad * 0.3)
+        
+        left_points = [
+            (left_inner_x, left_inner_y),
+            (left_outer_x, left_outer_y),
+            (left_outer_x, left_outer_y + eyebrow_height),
+            (left_inner_x, left_inner_y + eyebrow_height)
+        ]
+        
+        # Right eyebrow points
+        right_inner_x = right_eye_x - eyebrow_length // 3
+        right_outer_x = right_eye_x + eyebrow_length // 3
+        right_inner_y = left_center_y - int(eyebrow_length * angle_rad * 0.3)
+        right_outer_y = left_center_y + int(eyebrow_length * angle_rad * 0.3)
+        
+        right_points = [
+            (right_inner_x, right_inner_y),
+            (right_outer_x, right_outer_y),
+            (right_outer_x, right_outer_y + eyebrow_height),
+            (right_inner_x, right_inner_y + eyebrow_height)
+        ]
+        
+        # Draw eyebrows with glow effect
+        for points in [left_points, right_points]:
+            # Safety check for valid points
+            if len(points) < 3:
+                continue
+                
+            # Check if points are valid
+            valid_points = True
+            for point in points:
+                if not isinstance(point, (tuple, list)) or len(point) != 2:
+                    valid_points = False
+                    break
+                if not all(isinstance(coord, (int, float)) for coord in point):
+                    valid_points = False
+                    break
+            
+            if not valid_points:
+                continue
+                
+            # Glow effect
+            try:
+                min_x = min(pt[0] for pt in points)
+                min_y = min(pt[1] for pt in points)
+                max_x = max(pt[0] for pt in points)
+                max_y = max(pt[1] for pt in points)
+                
+                glow_width = max(40, int(max_x - min_x + 40))
+                glow_height = max(40, int(max_y - min_y + 40))
+                
+                glow_surface = pygame.Surface((glow_width, glow_height), pygame.SRCALPHA)
+                glow_points = [(p[0] - min_x + 20, p[1] - min_y + 20) for p in points]
+            except (ValueError, TypeError):
+                continue
+            
+            for i in range(3):
+                alpha = max(0, min(255, 60 - i * 15))
+                glow_color = (*eyebrow_color, alpha)
+                expanded_points = []
+                
+                try:
+                    center_x = sum(p[0] for p in glow_points) / len(glow_points)
+                    center_y = sum(p[1] for p in glow_points) / len(glow_points)
+                    
+                    for p in glow_points:
+                        dx = p[0] - center_x
+                        dy = p[1] - center_y
+                        scale = 1 + i * 0.2
+                        expanded_points.append((center_x + dx * scale, center_y + dy * scale))
+                except (ZeroDivisionError, TypeError):
+                    expanded_points = glow_points[:]
+                
+                if len(expanded_points) >= 3:
+                    try:
+                        pygame.draw.polygon(glow_surface, glow_color, expanded_points)
+                    except (ValueError, TypeError):
+                        pass
+            
+            try:
+                surface.blit(glow_surface, (min_x - 20, min_y - 20))
+            except:
+                pass
+            
+            # Main eyebrow
+            if len(points) >= 3:
+                try:
+                    pygame.draw.polygon(surface, eyebrow_color, points)
+                except (ValueError, TypeError):
+                    pass
+
+    def update_tears(self):
+        """Update tear animation"""
+        current_expression = self.expressions[self.expression]
+        
+        if current_expression['has_tears']:
+            now = time.time() * 1000
+            
+            # Create new tears occasionally
+            if now - self.last_tear > 800 + random.random() * 1200:
+                self.last_tear = now
+                
+                # Create tears from both eyes
+                center_x = self.canvas_rect.centerx
+                center_y = self.canvas_rect.centery
+                left_eye_x = center_x - self.face_params.eye_distance // 2
+                right_eye_x = center_x + self.face_params.eye_distance // 2
+                eye_y = center_y + current_expression['eye_offset']
+                
+                # Add tears with some randomness
+                for eye_x in [left_eye_x, right_eye_x]:
+                    if random.random() > 0.3:  # Not every time
+                        tear = Tear(
+                            x=eye_x + random.randint(-15, 15),
+                            y=eye_y + self.face_params.eye_height // 2,
+                            speed=2 + random.random() * 2,
+                            size=4 + random.random() * 4
+                        )
+                        self.tears.append(tear)
+        
+        # Update existing tears
+        for tear in self.tears[:]:
+            tear.y += tear.speed
+            tear.speed += 0.1  # Gravity
+            tear.alpha = max(0, tear.alpha - 2)
+            
+            # Remove tears that are off screen or faded
+            if tear.y > self.canvas_rect.bottom + 50 or tear.alpha <= 0 or tear.size <= 0:
+                self.tears.remove(tear)
+
+    def draw_tears(self, surface):
+        """Draw falling tears"""
+        for tear in self.tears:
+            # Safety checks
+            if tear.size <= 0 or tear.alpha <= 0:
+                continue
+                
+            # Main tear drop
+            tear_color = (100, 150, 255, int(tear.alpha))
+            
+            # Create tear surface with alpha
+            tear_width = max(4, int(tear.size * 2))
+            tear_height = max(6, int(tear.size * 3))
+            tear_surface = pygame.Surface((tear_width, tear_height), pygame.SRCALPHA)
+            
+            # Draw teardrop shape
+            points = [
+                (tear.size, 0),  # Top point
+                (tear.size * 1.5, tear.size * 0.7),
+                (tear.size, tear.size * 2.5),  # Bottom
+                (tear.size * 0.5, tear.size * 0.7)
+            ]
+            
+            # Validate points
+            valid_points = []
+            for point in points:
+                x, y = point
+                if 0 <= x < tear_width and 0 <= y < tear_height:
+                    valid_points.append((int(x), int(y)))
+            
+            if len(valid_points) >= 3:
+                try:
+                    pygame.draw.polygon(tear_surface, tear_color, valid_points)
+                except:
+                    pass
+            
+            # Draw circle part
+            circle_x = max(0, min(tear_width - 1, int(tear.size)))
+            circle_y = max(0, min(tear_height - 1, int(tear.size * 0.8)))
+            circle_radius = max(1, min(int(tear.size * 0.7), tear_width // 2, tear_height // 2))
+            
+            try:
+                pygame.draw.circle(tear_surface, tear_color, (circle_x, circle_y), circle_radius)
+            except:
+                pass
+            
+            surface.blit(tear_surface, (tear.x - tear.size, tear.y - tear.size))
+            
+            # Add highlight
+            highlight_size = max(2, int(tear.size))
+            highlight_surface = pygame.Surface((highlight_size, highlight_size), pygame.SRCALPHA)
+            highlight_color = (200, 220, 255, int(tear.alpha * 0.6))
+            
+            highlight_center = (highlight_size // 2, highlight_size // 2)
+            highlight_radius = max(1, int(tear.size * 0.3))
+            
+            try:
+                pygame.draw.circle(highlight_surface, highlight_color, highlight_center, highlight_radius)
+            except:
+                pass
+                
+            surface.blit(highlight_surface, (tear.x - tear.size * 0.5, tear.y - tear.size * 0.3))
+
+    def update_sparkles(self):
+        """Update sparkle animation for happy expression"""
+        current_expression = self.expressions[self.expression]
+        
+        if current_expression['has_sparkles']:
+            now = time.time() * 1000
+            
+            # Create new sparkles
+            if now - self.last_sparkle > 300 + random.random() * 400:
+                self.last_sparkle = now
+                
+                # Create sparkles around the eyes
+                center_x = self.canvas_rect.centerx
+                center_y = self.canvas_rect.centery
+                
+                for _ in range(random.randint(2, 4)):
+                    sparkle = Sparkle(
+                        x=center_x + random.randint(-150, 150),
+                        y=center_y + random.randint(-80, 80),
+                        size=random.randint(3, 8),
+                        rotation=random.random() * math.pi * 2,
+                        life=1000 + random.random() * 1000,
+                        max_life=1000 + random.random() * 1000
+                    )
+                    self.sparkles.append(sparkle)
+        
+        # Update existing sparkles
+        for sparkle in self.sparkles[:]:
+            sparkle.life -= 16  # Assuming 60 FPS
+            sparkle.rotation += 0.1
+            
+            if sparkle.life <= 0:
+                self.sparkles.remove(sparkle)
+
+    def draw_sparkles(self, surface):
+        """Draw twinkling sparkles"""
+        for sparkle in self.sparkles:
+            life_ratio = sparkle.life / sparkle.max_life
+            if life_ratio <= 0:
+                continue
+                
+            alpha = int(255 * life_ratio)
+            
+            if alpha <= 0:
+                continue
+            
+            # Create sparkle surface
+            sparkle_size = int(sparkle.size * (0.5 + life_ratio * 0.5))
+            if sparkle_size <= 0:
+                continue
+                
+            surface_size = max(8, sparkle_size * 4)
+            sparkle_surface = pygame.Surface((surface_size, surface_size), pygame.SRCALPHA)
+            
+            center = surface_size // 2
+            sparkle_color = (*self.face_params.eye_color, max(0, min(255, alpha)))
+            
+            # Draw star shape
+            points = []
+            for i in range(8):
+                angle = i * math.pi / 4 + sparkle.rotation
+                if i % 2 == 0:
+                    radius = sparkle_size
+                else:
+                    radius = sparkle_size * 0.4
+                
+                x = center + radius * math.cos(angle)
+                y = center + radius * math.sin(angle)
+                # Clamp to surface bounds
+                x = max(0, min(surface_size - 1, x))
+                y = max(0, min(surface_size - 1, y))
+                points.append((int(x), int(y)))
+            
+            if len(points) >= 3:
+                try:
+                    pygame.draw.polygon(sparkle_surface, sparkle_color, points)
+                except:
+                    pass
+            
+            # Add bright center
+            bright_alpha = max(0, min(255, int(alpha * 0.8)))
+            bright_color = (255, 255, 255, bright_alpha)
+            center_radius = max(1, sparkle_size // 3)
+            
+            try:
+                pygame.draw.circle(sparkle_surface, bright_color, (center, center), center_radius)
+            except:
+                pass
+            
+            surface.blit(sparkle_surface, (sparkle.x - surface_size // 2, sparkle.y - surface_size // 2))
 
     def update_animation(self):
         """Update animation state"""
@@ -275,9 +726,13 @@ class RoboFace:
         self.eye_state.blink_amount = current_blink
         self.eye_state.brightness = current_brightness
         self.face_params.eye_height = int(current_eye_height)
+        
+        # Update dramatic effects
+        self.update_tears()
+        self.update_sparkles()
 
     def draw_face(self, surface):
-        """Draw the robot face"""
+        """Draw the robot face with dramatic expressions"""
         # Clear canvas area with black
         pygame.draw.rect(surface, (0, 0, 0), self.canvas_rect)
         
@@ -287,26 +742,54 @@ class RoboFace:
         left_eye_x = center_x - self.face_params.eye_distance // 2
         right_eye_x = center_x + self.face_params.eye_distance // 2
         
-        # Get current expression offset
+        # Get current expression
         current_expression = self.expressions[self.expression]
         eye_y = center_y + current_expression['eye_offset']
         
-        # Draw eyes
-        self.draw_eye(surface, 
-                     int(left_eye_x + self.eye_state.x), 
-                     int(eye_y + self.eye_state.y),
-                     self.face_params.eye_width, 
-                     self.face_params.eye_height, 
-                     self.eye_state.blink_amount, 
-                     self.eye_state.brightness)
+        # Draw eyebrows if needed
+        if current_expression['has_eyebrows']:
+            self.draw_eyebrows(surface, left_eye_x, right_eye_x, eye_y, current_expression['eyebrow_angle'])
         
-        self.draw_eye(surface, 
-                     int(right_eye_x + self.eye_state.x), 
-                     int(eye_y + self.eye_state.y),
-                     self.face_params.eye_width, 
-                     self.face_params.eye_height, 
-                     self.eye_state.blink_amount, 
-                     self.eye_state.brightness)
+        # Draw eyes with curves
+        eye_curve = current_expression['eye_curve']
+        if abs(eye_curve) > 0.1:
+            self.draw_curved_eye(surface, 
+                               int(left_eye_x + self.eye_state.x), 
+                               int(eye_y + self.eye_state.y),
+                               self.face_params.eye_width, 
+                               self.face_params.eye_height, 
+                               self.eye_state.blink_amount, 
+                               self.eye_state.brightness,
+                               eye_curve)
+            
+            self.draw_curved_eye(surface, 
+                               int(right_eye_x + self.eye_state.x), 
+                               int(eye_y + self.eye_state.y),
+                               self.face_params.eye_width, 
+                               self.face_params.eye_height, 
+                               self.eye_state.blink_amount, 
+                               self.eye_state.brightness,
+                               eye_curve)
+        else:
+            self.draw_eye(surface, 
+                         int(left_eye_x + self.eye_state.x), 
+                         int(eye_y + self.eye_state.y),
+                         self.face_params.eye_width, 
+                         self.face_params.eye_height, 
+                         self.eye_state.blink_amount, 
+                         self.eye_state.brightness)
+            
+            self.draw_eye(surface, 
+                         int(right_eye_x + self.eye_state.x), 
+                         int(eye_y + self.eye_state.y),
+                         self.face_params.eye_width, 
+                         self.face_params.eye_height, 
+                         self.eye_state.blink_amount, 
+                         self.eye_state.brightness)
+        
+        # Draw dramatic effects
+        self.draw_tears(surface)
+        self.draw_sparkles(surface)
         
         # Draw subtle face outline
         outline_color = (*self.face_params.eye_color, 32)
@@ -315,13 +798,19 @@ class RoboFace:
         pygame.draw.rect(outline_surface, outline_color, outline_rect, 1, border_radius=15)
         surface.blit(outline_surface, (center_x - 180, center_y - 120))
         
-        # Add ambient glow effect
-        glow_surface = pygame.Surface((400, 400), pygame.SRCALPHA)
-        for radius in range(200, 0, -10):
-            alpha = int((self.face_params.eye_color[0] + self.face_params.eye_color[1] + self.face_params.eye_color[2]) / 3 * 0.02)
+        # Add ambient glow effect (enhanced for dramatic expressions)
+        glow_multiplier = 1.0
+        if self.expression == 'happy':
+            glow_multiplier = 1.5
+        elif self.expression == 'angry':
+            glow_multiplier = 2.0
+        
+        glow_surface = pygame.Surface((500, 500), pygame.SRCALPHA)
+        for radius in range(250, 0, -15):
+            alpha = int((self.face_params.eye_color[0] + self.face_params.eye_color[1] + self.face_params.eye_color[2]) / 3 * 0.015 * glow_multiplier)
             color = (*self.face_params.eye_color, max(1, alpha))
-            pygame.draw.circle(glow_surface, color, (200, 200), radius)
-        surface.blit(glow_surface, (center_x - 200, center_y - 200))
+            pygame.draw.circle(glow_surface, color, (250, 250), radius)
+        surface.blit(glow_surface, (center_x - 250, center_y - 250))
 
     def draw_ui(self, surface):
         """Draw the user interface"""
@@ -354,7 +843,7 @@ class RoboFace:
         surface.blit(text, text_rect)
         
         # Expressions
-        text = self.font.render("Expressions", True, (0, 255, 255))
+        text = self.font.render("Dramatic Expressions", True, (0, 255, 255))
         surface.blit(text, (200, start_y - 25))
         
         for exp, rect in self.expression_buttons.items():
@@ -409,12 +898,13 @@ class RoboFace:
             f"Eye Position: ({int(self.eye_state.x)}, {int(self.eye_state.y)})",
             f"Blink: {int(self.eye_state.blink_amount * 100)}%",
             f"Brightness: {int(self.eye_state.brightness * 100)}%",
-            f"Sound: {'Enabled' if self.sound_enabled else 'Disabled'}"
+            f"Active Tears: {len(self.tears)}",
+            f"Active Sparkles: {len(self.sparkles)}"
         ]
         
         for i, line in enumerate(status_lines):
             text = self.small_font.render(line, True, (200, 200, 200))
-            surface.blit(text, (750, start_y + i * 18))
+            surface.blit(text, (750, start_y + i * 16))
 
     def handle_slider_drag(self, mouse_pos, mouse_pressed):
         """Handle slider dragging"""
@@ -476,18 +966,28 @@ class RoboFace:
 
     def change_expression(self, new_expression):
         """Change facial expression"""
+        old_expression = self.expression
         self.expression = new_expression
+        
+        # Clear effects when changing expressions
+        if old_expression != new_expression:
+            if not self.expressions[new_expression]['has_tears']:
+                self.tears.clear()
+            if not self.expressions[new_expression]['has_sparkles']:
+                self.sparkles.clear()
+        
         # Play expression change sound
         frequencies = {
-            'happy': 1200,
-            'sad': 400,
-            'angry': 200,
-            'surprised': 1500,
-            'sleepy': 300,
+            'happy': 1500,  # Higher, more cheerful
+            'sad': 300,     # Lower, more melancholic
+            'angry': 150,   # Deep, aggressive
+            'surprised': 1800,  # High surprise
+            'sleepy': 250,  # Low, drowsy
             'neutral': 800
         }
         frequency = frequencies.get(new_expression, 800)
-        self.play_sound(frequency, 0.2, 'triangle')
+        wave_type = 'triangle' if new_expression == 'happy' else 'sine'
+        self.play_sound(frequency, 0.25, wave_type)
 
     def run(self):
         """Main game loop"""
@@ -521,6 +1021,19 @@ class RoboFace:
                         self.auto_mode = not self.auto_mode
                     elif event.key == pygame.K_s:
                         self.sound_enabled = not self.sound_enabled
+                    # Expression hotkeys
+                    elif event.key == pygame.K_1:
+                        self.change_expression('neutral')
+                    elif event.key == pygame.K_2:
+                        self.change_expression('happy')
+                    elif event.key == pygame.K_3:
+                        self.change_expression('sad')
+                    elif event.key == pygame.K_4:
+                        self.change_expression('angry')
+                    elif event.key == pygame.K_5:
+                        self.change_expression('surprised')
+                    elif event.key == pygame.K_6:
+                        self.change_expression('sleepy')
             
             # Update animation
             self.update_animation()
