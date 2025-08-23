@@ -251,6 +251,9 @@ class AnimationsHandler:
         eye_r_width = int(eye_r_width_current)
         eye_r_height = int(eye_r_height_current)
         
+        # Check if we're in cyclops mode
+        cyclops_mode = getattr(self.parent, 'cyclops', False)
+        
         # Smooth transitions for eyelids
         eyelids_closed_height = int((self.eyelids_closed_height + self.eyelids_closed_height_next) / 2)
         
@@ -282,8 +285,8 @@ class AnimationsHandler:
                         ),
                         0
                     )
-                # Right eye wink
-                else:
+                # Right eye wink (only if not in cyclops mode)
+                elif not cyclops_mode:
                     pygame.draw.rect(
                         screen,
                         (0, 0, 0),  # BLACK
@@ -306,9 +309,9 @@ class AnimationsHandler:
                         ),
                         0
                     )
-            # Regular blink (both eyes)
+            # Regular blink (both eyes or cyclops eye)
             else:
-                # Left eye
+                # Left eye (always drawn)
                 pygame.draw.rect(
                     screen,
                     (0, 0, 0),  # BLACK
@@ -332,26 +335,27 @@ class AnimationsHandler:
                     0
                 )
                 
-                # Right eye
-                pygame.draw.rect(
-                    screen,
-                    (0, 0, 0),  # BLACK
-                    (
-                        eye_r_x,
-                        eye_r_y,
-                        eye_r_width,
-                        eyelids_closed_height
-                    ),
-                    0
-                )
-                pygame.draw.rect(
-                    screen,
-                    (0, 0, 0),  # BLACK
-                    (
-                        eye_r_x,
-                        eye_r_y + eye_r_height - eyelids_closed_height,
-                        eye_r_width,
-                        eyelids_closed_height
-                    ),
-                    0
-                )
+                # Right eye (only if not in cyclops mode)
+                if not cyclops_mode:
+                    pygame.draw.rect(
+                        screen,
+                        (0, 0, 0),  # BLACK
+                        (
+                            eye_r_x,
+                            eye_r_y,
+                            eye_r_width,
+                            eyelids_closed_height
+                        ),
+                        0
+                    )
+                    pygame.draw.rect(
+                        screen,
+                        (0, 0, 0),  # BLACK
+                        (
+                            eye_r_x,
+                            eye_r_y + eye_r_height - eyelids_closed_height,
+                            eye_r_width,
+                            eyelids_closed_height
+                        ),
+                        0
+                    )

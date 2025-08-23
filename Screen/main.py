@@ -61,6 +61,7 @@ def main():
         print("Press L to laugh")
         print("Press F to look confused")
         print("Press E to look excited")
+        print("Press C to toggle cyclops mode (single eye)")
         print("Use ARROW KEYS to move eyes (auto-centers after 5 seconds of inactivity)")
         print("Press W to wink left eye")
         print("Press Q to wink right eye")
@@ -110,6 +111,9 @@ def main():
                     elif event.key == pygame.K_q:
                         eyes.wink(left_eye=False)
                         print("Winking right eye")
+                    elif event.key == pygame.K_c:
+                        cyclops_state = eyes.toggle_cyclops()
+                        print(f"Cyclops mode: {'ON' if cyclops_state else 'OFF'}")
                     elif event.key == pygame.K_SPACE:
                         # Reset to default
                         eyes.set_mood(DEFAULT)

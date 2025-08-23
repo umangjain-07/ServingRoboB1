@@ -11,7 +11,7 @@
 ### Controls
 
 - **ESC**: Exit the application
-- **1-4**: Change mood (1=Default, 2=Tired, 3=Angry, 4=Happy)
+- **1-5**: Change mood (1=Default, 2=Tired, 3=Sad, 4=Happy, 5=Angry)
 - **C**: Toggle cyclops mode
 - **B**: Trigger blink animation
 - **L**: Trigger laugh animation

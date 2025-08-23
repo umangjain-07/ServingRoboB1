@@ -158,6 +158,9 @@ class ShapesHandler:
         eye_r_width = int(eye_r_width_current)
         eye_r_height = int(eye_r_height_current)
 
+        # Check if we're in cyclops mode
+        cyclops_mode = getattr(self.parent, 'cyclops', False)
+
         if self.eye_shape == "round":
             # Calculate radii for circular eyes (use min dimension for perfect circle)
             radius_l = min(eye_l_width, eye_l_height) // 2
@@ -171,7 +174,8 @@ class ShapesHandler:
 
             # Draw circular eyes
             pygame.draw.circle(screen, eye_color, (center_l_x, center_l_y), radius_l)
-            pygame.draw.circle(screen, eye_color, (center_r_x, center_r_y), radius_r)
+            if not cyclops_mode:
+                pygame.draw.circle(screen, eye_color, (center_r_x, center_r_y), radius_r)
 
         elif self.eye_shape == "square":
             # Draw square eyes with rounded corners (radius ~30% of the smaller dimension)
@@ -181,8 +185,9 @@ class ShapesHandler:
 
             # Left eye rounded rect
             pygame.draw.rect(screen, eye_color, (eye_l_x, eye_l_y, eye_l_width, eye_l_height), border_radius=corner_radius_l)
-            # Right eye rounded rect
-            pygame.draw.rect(screen, eye_color, (eye_r_x, eye_r_y, eye_r_width, eye_r_height), border_radius=corner_radius_r)
+            # Right eye rounded rect (only if not cyclops)
+            if not cyclops_mode:
+                pygame.draw.rect(screen, eye_color, (eye_r_x, eye_r_y, eye_r_width, eye_r_height), border_radius=corner_radius_r)
 
         elif self.eye_shape == "pill":
             # Draw pill-shaped eyes (capsule shape)
@@ -191,7 +196,8 @@ class ShapesHandler:
             radius_l = max(1, eye_l_height // 2)
             radius_r = max(1, eye_r_height // 2)
             pygame.draw.rect(screen, eye_color, (eye_l_x, eye_l_y, eye_l_width, eye_l_height), border_radius=radius_l)
-            pygame.draw.rect(screen, eye_color, (eye_r_x, eye_r_y, eye_r_width, eye_r_height), border_radius=radius_r)
+            if not cyclops_mode:
+                pygame.draw.rect(screen, eye_color, (eye_r_x, eye_r_y, eye_r_width, eye_r_height), border_radius=radius_r)
 
         elif self.eye_shape == "angry":
             # Draw angry-shaped eyes (angled eyes from image)
@@ -215,24 +221,26 @@ class ShapesHandler:
                 is_left_eye=True  # Pass flag for left eye
             )
 
-            # Right eye
-            self._draw_angry(
-                screen,
-                eye_color,
-                bg_color, # Pass background color
-                eye_r_x,
-                eye_r_y,
-                eye_r_width,
-                eye_r_height,
-                is_left_eye=False # Pass flag for right eye
-            )
+            # Right eye (only if not cyclops)
+            if not cyclops_mode:
+                self._draw_angry(
+                    screen,
+                    eye_color,
+                    bg_color, # Pass background color
+                    eye_r_x,
+                    eye_r_y,
+                    eye_r_width,
+                    eye_r_height,
+                    is_left_eye=False # Pass flag for right eye
+                )
 
         elif self.eye_shape == "oval":
             # Draw oval-shaped eyes (ellipses) using the bounding box
             # Left eye
             pygame.draw.ellipse(screen, eye_color, (eye_l_x, eye_l_y, eye_l_width, eye_l_height))
-            # Right eye
-            pygame.draw.ellipse(screen, eye_color, (eye_r_x, eye_r_y, eye_r_width, eye_r_height))
+            # Right eye (only if not cyclops)
+            if not cyclops_mode:
+                pygame.draw.ellipse(screen, eye_color, (eye_r_x, eye_r_y, eye_r_width, eye_r_height))
 
     def _draw_angry(self, screen, color, bg_color, x, y, width, height, is_left_eye):
         # ... (parameter validation, radius calculations as before) ...

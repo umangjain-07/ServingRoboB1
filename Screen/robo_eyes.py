@@ -161,12 +161,20 @@ class RoboEyes:
 
     def _calculate_eye_positions(self):
         """Calculate the eye positions based on screen size and eye properties"""
-        # Calculate positions for both eyes (cyclops mode disabled)
-        total_width = self.eye_l_width + self.eye_r_width + self.space_between
-        self.eye_l_x = (self.screen_width - total_width) // 2
-        self.eye_l_y = (self.screen_height - self.eye_l_height) // 2
-        self.eye_r_x = self.eye_l_x + self.eye_l_width + self.space_between
-        self.eye_r_y = (self.screen_height - self.eye_r_height) // 2
+        if self.cyclops:
+            # Cyclops mode: single centered eye using left eye properties
+            self.eye_l_x = (self.screen_width - self.eye_l_width) // 2
+            self.eye_l_y = (self.screen_height - self.eye_l_height) // 2
+            # Right eye is not used in cyclops mode
+            self.eye_r_x = -1000  # Off-screen
+            self.eye_r_y = -1000  # Off-screen
+        else:
+            # Normal mode: two eyes side by side
+            total_width = self.eye_l_width + self.eye_r_width + self.space_between
+            self.eye_l_x = (self.screen_width - total_width) // 2
+            self.eye_l_y = (self.screen_height - self.eye_l_height) // 2
+            self.eye_r_x = self.eye_l_x + self.eye_l_width + self.space_between
+            self.eye_r_y = (self.screen_height - self.eye_r_height) // 2
         
         self.eye_l_x_next = self.eye_l_x
         self.eye_l_y_next = self.eye_l_y
@@ -763,11 +771,16 @@ class RoboEyes:
         return True
 
     def set_cyclops(self, state):
-        """Set cyclops mode (single eye) - DISABLED"""
-        # Always set to False to disable cyclops mode
-        self.cyclops = False
+        """Set cyclops mode (single eye)"""
+        self.cyclops = state
         self._calculate_eye_positions()
         return True
+        
+    def toggle_cyclops(self):
+        """Toggle cyclops mode on/off"""
+        self.cyclops = not self.cyclops
+        self._calculate_eye_positions()
+        return self.cyclops
 
     # Mood and expression methods
     def set_mood(self, mood):
