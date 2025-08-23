@@ -14,7 +14,7 @@ import math
 
 # Import utility modules
 from utils.animations_utils import AnimationsHandler
-from utils.moods_utils import MoodsHandler, DEFAULT, TIRED, SAD, EXCITED
+from utils.moods_utils import MoodsHandler, DEFAULT, TIRED, SAD, EXCITED, ANGRY
 from utils.shapes_utils import ShapesHandler, N, NE, E, SE, S, SW, W, NW
 
 # Colors
@@ -383,6 +383,263 @@ class RoboEyes:
                     ),
                     0
                 )
+        
+        # Draw the mouth AFTER all other elements so it's visible
+        self._draw_mouth(eye_l_x_current, eye_l_y_current, eye_r_x_current, eye_r_y_current)
+
+    def _draw_mouth(self, eye_l_x_current, eye_l_y_current, eye_r_x_current, eye_r_y_current):
+        """Draw a D-shaped mouth below the eyes with unique expressions for each mood"""
+        # Calculate mouth position - perfectly centered below the eyes, positioned lower
+        # Use the center point between both eyes for perfect centering
+        left_eye_center_x = eye_l_x_current + self.eye_l_width_current / 2
+        right_eye_center_x = eye_r_x_current + self.eye_r_width_current / 2
+        mouth_x = (left_eye_center_x + right_eye_center_x) / 2
+        mouth_y = max(eye_l_y_current, eye_r_y_current) + 100  # Position lower for better centering
+        
+        # Get current mood for mouth expression
+        current_mood = self.moods.get_current_mood()
+        
+        # Base mouth properties - increased sizes for all moods
+        mouth_width = 50  # Increased from 40
+        mouth_height = 10  # Increased from 8
+        
+        # Mood-specific mouth properties - all bigger now
+        if current_mood == TIRED:
+            # Tired: Medium, slightly downturned D
+            mouth_width = 42  # Increased from 32
+            mouth_height = 8   # Increased from 6
+            mouth_y += 5  # Even lower for tired look
+            mouth_curve = -0.4  # More downturn
+        elif current_mood == SAD:
+            # Sad: Medium, downturned D
+            mouth_width = 38   # Increased from 28
+            mouth_height = 7   # Increased from 5
+            mouth_y += 8  # Much lower for sad look
+            mouth_curve = -0.8  # Strong downturn
+        elif current_mood == EXCITED:
+            # Excited: Wide, upturned D (happy smile)
+            mouth_width = 58   # Increased from 48
+            mouth_height = 14  # Increased from 12
+            mouth_y += 2  # Slightly lower but still happy
+            mouth_curve = 0.6  # Strong upturn for smile
+        elif current_mood == ANGRY:
+            # Angry: Large, strongly downturned D
+            mouth_width = 46   # Increased from 36
+            mouth_height = 9   # Increased from 7
+            mouth_y += 10  # Much lower for angry look
+            mouth_curve = -1.0  # Strongest downturn
+        else:  # DEFAULT
+            # Default: Balanced D with slight smile
+            mouth_width = 50   # Increased from 40
+            mouth_height = 10  # Increased from 8
+            mouth_y += 3  # Slightly lower
+            mouth_curve = 0.2  # Slight upturn for friendly look
+        
+        # Draw the D-shaped mouth
+        self._draw_d_shaped_mouth(mouth_x, mouth_y, mouth_width, mouth_height, mouth_curve)
+    
+    def _draw_d_shaped_mouth(self, x, y, width, height, curve):
+        """Draw a proper D-shaped mouth with the specified curve"""
+        # Create a proper D shape using multiple drawing elements
+        
+        if curve > 0:  # Happy/Smile expression
+            # Draw the main D shape for happy expression
+            self._draw_happy_d_mouth(x, y, width, height)
+        elif curve < 0:  # Sad/Angry expression
+            # Draw the main D shape for sad expression
+            self._draw_sad_d_mouth(x, y, width, height, curve)
+        else:  # Neutral expression
+            # Draw a neutral D shape
+            self._draw_neutral_d_mouth(x, y, width, height)
+    
+    def _draw_happy_d_mouth(self, x, y, width, height):
+        """Draw a happy D-shaped mouth (upturned)"""
+        # Main mouth body (rectangle)
+        pygame.draw.rect(
+            self.screen,
+            CYAN,
+            (
+                x - width // 2,
+                y,
+                width,
+                height
+            ),
+            0
+        )
+        
+        # Add rounded corners
+        corner_radius = 4
+        # Left corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x - width // 2 + corner_radius, y + height // 2),
+            corner_radius
+        )
+        # Right corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x + width // 2 - corner_radius, y + height // 2),
+            corner_radius
+        )
+        
+        # Create the smile curve at the bottom
+        smile_width = width - 8
+        smile_height = 6
+        pygame.draw.ellipse(
+            self.screen,
+            CYAN,
+            (
+                x - smile_width // 2,
+                y + height - 3,
+                smile_width,
+                smile_height
+            ),
+            0
+        )
+        
+        # Add inner highlight for depth
+        highlight_width = width - 6
+        highlight_height = 3
+        pygame.draw.rect(
+            self.screen,
+            WHITE,
+            (
+                x - highlight_width // 2,
+                y + 2,
+                highlight_width,
+                highlight_height
+            ),
+            0
+        )
+        
+        # Add glow effect
+        glow_surface = pygame.Surface((width + 10, height + 10))
+        glow_surface.set_alpha(25)
+        glow_surface.fill(CYAN)
+        self.screen.blit(glow_surface, (x - width // 2 - 5, y - 5))
+    
+    def _draw_sad_d_mouth(self, x, y, width, height, curve):
+        """Draw a sad D-shaped mouth (downturned)"""
+        # Main mouth body (rectangle)
+        pygame.draw.rect(
+            self.screen,
+            CYAN,
+            (
+                x - width // 2,
+                y,
+                width,
+                height
+            ),
+            0
+        )
+        
+        # Add rounded corners
+        corner_radius = 4
+        # Left corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x - width // 2 + corner_radius, y + height // 2),
+            corner_radius
+        )
+        # Right corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x + width // 2 - corner_radius, y + height // 2),
+            corner_radius
+        )
+        
+        # Create the frown curve at the top
+        frown_width = width - 8
+        frown_height = 6
+        pygame.draw.ellipse(
+            self.screen,
+            CYAN,
+            (
+                x - frown_width // 2,
+                y - 3,
+                frown_width,
+                frown_height
+            ),
+            0
+        )
+        
+        # Add inner highlight for depth
+        highlight_width = width - 6
+        highlight_height = 2
+        pygame.draw.rect(
+            self.screen,
+            WHITE,
+            (
+                x - highlight_width // 2,
+                y + height - 4,
+                highlight_width,
+                highlight_height
+            ),
+            0
+        )
+        
+        # Add glow effect
+        glow_surface = pygame.Surface((width + 10, height + 10))
+        glow_surface.set_alpha(25)
+        glow_surface.fill(CYAN)
+        self.screen.blit(glow_surface, (x - width // 2 - 5, y - 5))
+    
+    def _draw_neutral_d_mouth(self, x, y, width, height):
+        """Draw a neutral D-shaped mouth"""
+        # Main mouth body (rectangle)
+        pygame.draw.rect(
+            self.screen,
+            CYAN,
+            (
+                x - width // 2,
+                y,
+                width,
+                height
+            ),
+            0
+        )
+        
+        # Add rounded corners
+        corner_radius = 4
+        # Left corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x - width // 2 + corner_radius, y + height // 2),
+            corner_radius
+        )
+        # Right corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x + width // 2 - corner_radius, y + height // 2),
+            corner_radius
+        )
+        
+        # Add inner highlight for depth
+        highlight_width = width - 6
+        highlight_height = 2
+        pygame.draw.rect(
+            self.screen,
+            WHITE,
+            (
+                x - highlight_width // 2,
+                y + 2,
+                highlight_width,
+                highlight_height
+            ),
+            0
+        )
+        
+        # Add glow effect
+        glow_surface = pygame.Surface((width + 8, height + 8))
+        glow_surface.set_alpha(25)
+        glow_surface.fill(CYAN)
+        self.screen.blit(glow_surface, (x - width // 2 - 4, y - 4))
         
 
 

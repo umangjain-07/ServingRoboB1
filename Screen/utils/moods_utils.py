@@ -11,6 +11,7 @@ DEFAULT = 0
 TIRED = 1
 SAD = 2
 EXCITED = 3
+ANGRY = 4
 
 class MoodsHandler:
     def __init__(self, parent):
@@ -21,6 +22,12 @@ class MoodsHandler:
         # Eyelid properties for mood expressions
         self.eyelids_tired_height = 0
         self.eyelids_tired_height_next = 0
+        
+        # Mouth properties for mood expressions
+        self.mouth_width = 40
+        self.mouth_height = 8
+        self.mouth_curve = 0.0
+        self.mouth_y_offset = 0
     
     def set_mood(self, mood):
         """Set the mood expression"""
@@ -34,7 +41,7 @@ class MoodsHandler:
             self.eyelids_tired_height_next = int(self.parent.eye_l_height * 0.3)
             self.parent.shapes.set_eye_shape("square")
         elif mood == SAD:
-            # Angry shape for SAD mood as shown in the image
+            # Sad shape for SAD mood
             self.parent.shapes.set_eye_shape("angry")
             # Make eyes slightly narrower
             self.parent.shapes.set_width(
@@ -58,6 +65,18 @@ class MoodsHandler:
             )
             # Add asymmetry for more character
             self.parent.eye_r_width = int(self.parent.eye_r_width * 0.9)  # Right eye slightly narrower
+        elif mood == ANGRY:
+            # Angry shape for ANGRY mood
+            self.parent.shapes.set_eye_shape("angry")
+            # Make eyes narrower and more intense
+            self.parent.shapes.set_width(
+                int(self.parent.eye_l_width_default * 0.8), 
+                int(self.parent.eye_r_width_default * 0.8)
+            )
+            self.parent.shapes.set_height(
+                int(self.parent.eye_l_height_default * 0.9), 
+                int(self.parent.eye_r_height_default * 0.9)
+            )
         else:  # DEFAULT
             # Reset to default eye shape and size with slight asymmetry
             self.parent.shapes.set_eye_shape("square")
@@ -75,6 +94,44 @@ class MoodsHandler:
     def get_current_mood(self):
         """Get the current mood value"""
         return self.current_mood
+    
+    def get_mouth_properties(self):
+        """Get mouth properties for the current mood"""
+        if self.current_mood == TIRED:
+            return {
+                'width': 42,
+                'height': 8,
+                'curve': -0.4,
+                'y_offset': 5
+            }
+        elif self.current_mood == SAD:
+            return {
+                'width': 38,
+                'height': 7,
+                'curve': -0.8,
+                'y_offset': 8
+            }
+        elif self.current_mood == EXCITED:
+            return {
+                'width': 58,
+                'height': 14,
+                'curve': 0.6,
+                'y_offset': 2
+            }
+        elif self.current_mood == ANGRY:
+            return {
+                'width': 46,
+                'height': 9,
+                'curve': -1.0,
+                'y_offset': 10
+            }
+        else:  # DEFAULT
+            return {
+                'width': 50,
+                'height': 10,
+                'curve': 0.2,
+                'y_offset': 3
+            }
     
     def draw_mood_elements(self, screen, eye_l_x_current, eye_l_y_current, eye_r_x_current, eye_r_y_current, 
                           eye_l_width_current, eye_l_height_current, eye_r_width_current, eye_r_height_current):

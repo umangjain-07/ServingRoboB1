@@ -7,7 +7,7 @@ import pygame
 import sys
 import time
 from robo_eyes import RoboEyes
-from utils.moods_utils import DEFAULT, TIRED, SAD, EXCITED
+from utils.moods_utils import DEFAULT, TIRED, SAD, EXCITED, ANGRY
 from utils.shapes_utils import N, NE, E, SE, S, SW, W, NW
 
 def main():
@@ -51,8 +51,12 @@ def main():
         print("RoboEyes Python Demo")
         print("--------------------")
         print("Press ESC or close the window to exit")
-        print("Press 1-4 to change mood:")
-        print("  1: DEFAULT, 2: TIRED, 3: SAD, 4: EXCITED")
+        print("Press 1-5 to change mood (each has unique D-shaped mouth expression):")
+        print("  1: DEFAULT - Large balanced D mouth with slight smile")
+        print("  2: TIRED - Medium, slightly downturned D mouth")
+        print("  3: SAD - Medium, downturned D mouth")
+        print("  4: EXCITED - Extra wide, upturned D mouth (happy smile)")
+        print("  5: ANGRY - Large, strongly downturned D mouth")
         print("Press B to blink")
         print("Press L to laugh")
         print("Press F to look confused")
@@ -75,16 +79,19 @@ def main():
                         return
                     elif event.key == pygame.K_1:
                         eyes.set_mood(DEFAULT)
-                        print("Mood: DEFAULT")
+                        print("Mood: DEFAULT - Large balanced D mouth with slight smile")
                     elif event.key == pygame.K_2:
                         eyes.set_mood(TIRED)
-                        print("Mood: TIRED")
+                        print("Mood: TIRED - Medium, slightly downturned D mouth")
                     elif event.key == pygame.K_3:
                         eyes.set_mood(SAD)
-                        print("Mood: SAD")
+                        print("Mood: SAD - Medium, downturned D mouth")
                     elif event.key == pygame.K_4:
                         eyes.set_mood(EXCITED)
-                        print("Mood: EXCITED")
+                        print("Mood: EXCITED - Extra wide, upturned D mouth (happy smile)")
+                    elif event.key == pygame.K_5:
+                        eyes.set_mood(ANGRY)
+                        print("Mood: ANGRY - Large, strongly downturned D mouth")
                     elif event.key == pygame.K_b:
                         eyes.blink()
                         print("Blinking")
