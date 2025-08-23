@@ -188,12 +188,15 @@ class MoodsHandler:
         eye_r_width = int(eye_r_width_current)
         eye_r_height = int(eye_r_height_current)
         
+        # Check if we're in cyclops mode
+        cyclops_mode = getattr(self.parent, 'cyclops', False)
+        
         # Smooth transitions for eyelids
         eyelids_tired_height = int((self.eyelids_tired_height + self.eyelids_tired_height_next) / 2)
         
         # Draw tired eyelids if in TIRED mood
         if self.current_mood == TIRED and eyelids_tired_height > 0:
-            # Left eye
+            # Left eye (always drawn)
             pygame.draw.rect(
                 screen,
                 (0, 0, 0),  # BLACK
@@ -206,15 +209,16 @@ class MoodsHandler:
                 0
             )
             
-            # Right eye
-            pygame.draw.rect(
-                screen,
-                (0, 0, 0),  # BLACK
-                (
-                    eye_r_x,
-                    eye_r_y,
-                    eye_r_width,
-                    eyelids_tired_height
-                ),
-                0
-            )
+            # Right eye (only if not in cyclops mode)
+            if not cyclops_mode:
+                pygame.draw.rect(
+                    screen,
+                    (0, 0, 0),  # BLACK
+                    (
+                        eye_r_x,
+                        eye_r_y,
+                        eye_r_width,
+                        eyelids_tired_height
+                    ),
+                    0
+                )
