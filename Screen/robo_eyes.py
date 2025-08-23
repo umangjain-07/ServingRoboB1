@@ -87,7 +87,7 @@ class RoboEyes:
         self.eyelids_happy_bottom_offset = 0
         self.eyelids_happy_bottom_offset_next = 0
 
-        # Animation properties
+        # Animation properties - delegated to handlers
         self.mood = DEFAULT
         self.cyclops = False
         self.curiosity = False
@@ -95,27 +95,11 @@ class RoboEyes:
         self.h_flicker_amplitude = 0
         self.v_flicker = False
         self.v_flicker_amplitude = 0
-        self.auto_blinker = False
-        self.auto_blinker_interval = 3
-        self.auto_blinker_variation = 2
-        self.auto_blinker_last_time = 0
-        self.idle_mode = False
-        self.idle_mode_interval = 2
-        self.idle_mode_variation = 2
-        self.idle_mode_last_time = 0
         self.position = DEFAULT
 
-        # Animation state
-        self.is_blinking = False
-        self.is_winking = False
-        self.blink_start_time = 0
-        self.blink_duration = 0.3  # seconds
-        self.is_laughing = False
-        self.laugh_start_time = 0
-        self.laugh_duration = 1.0  # seconds
-        self.is_confused = False
-        self.confused_start_time = 0
-        self.confused_duration = 1.0  # seconds
+        # Animation state - delegated to animations handler
+        # (removed duplicate state variables)
+        self.is_laughing_mouth = False  # Special state for mouth during laugh animation
         
         # Eye shape variations
         self.eye_shape = "square"  # Can be "round", "square", "oval", "teardrop", "pill"
@@ -139,15 +123,7 @@ class RoboEyes:
         self.eyelids_tired_height = 0
         self.eyelids_tired_height_next = 0
         
-        # Auto animations
-        self.auto_blinker = True
-        self.auto_blinker_interval = 3
-        self.auto_blinker_variation = 2
-        self.auto_blinker_last_time = time.time()
-        self.idle_mode = True
-        self.idle_mode_interval = 4
-        self.idle_mode_variation = 2
-        self.idle_mode_last_time = time.time()
+
 
     def begin(self, screen_width, screen_height, max_fps=60):
         """Initialize the RoboEyes with screen dimensions and frame rate"""
@@ -365,7 +341,7 @@ class RoboEyes:
         )
         
         # Draw tired eyelids if in TIRED mood
-        if self.mood == TIRED and eyelids_tired_height > 0:
+        if self.mood == TIRED and self.eyelids_tired_height > 0:
             # Left eye (or single eye in cyclops mode)
             pygame.draw.rect(
                 self.screen,
@@ -374,7 +350,7 @@ class RoboEyes:
                     eye_l_x_current,
                     eye_l_y_current,
                     self.eye_l_width_current,
-                    eyelids_tired_height
+                    self.eyelids_tired_height
                 ),
                 0
             )
@@ -388,7 +364,7 @@ class RoboEyes:
                         eye_r_x_current,
                         eye_r_y_current,
                         self.eye_r_width_current,
-                        eyelids_tired_height
+                        self.eyelids_tired_height
                     ),
                     0
                 )
@@ -404,6 +380,16 @@ class RoboEyes:
         right_eye_center_x = eye_r_x_current + self.eye_r_width_current / 2
         mouth_x = (left_eye_center_x + right_eye_center_x) / 2
         mouth_y = max(eye_l_y_current, eye_r_y_current) + 100  # Position lower for better centering
+        
+        # Special case: laughing mouth (overrides all other moods)
+        if self.is_laughing_mouth:
+            # Extra wide, animated laughing smile with teeth
+            mouth_width = 75  # Extra wide for big laugh
+            mouth_height = 18  # Extra tall for big smile
+            mouth_y += 0  # Position higher for excited look
+            # Draw the main D-shaped laughing mouth with teeth
+            self._draw_laughing_d_mouth(mouth_x, mouth_y, mouth_width, mouth_height)
+            return
         
         # Get current mood for mouth expression
         current_mood = self.moods.get_current_mood()
@@ -447,6 +433,103 @@ class RoboEyes:
         # Draw the D-shaped mouth
         self._draw_d_shaped_mouth(mouth_x, mouth_y, mouth_width, mouth_height, mouth_curve)
     
+    def _draw_laughing_d_mouth(self, x, y, width, height):
+        """Draw a special laughing D-shaped mouth with wide smile and teeth segments"""
+        # Main mouth body (extra wide rectangle for laughing)
+        pygame.draw.rect(
+            self.screen,
+            CYAN,
+            (
+                x - width // 2,
+                y,
+                width,
+                height
+            ),
+            0
+        )
+        
+        # Add rounded corners
+        corner_radius = 6  # Larger corners for bigger mouth
+        # Left corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x - width // 2 + corner_radius, y + height // 2),
+            corner_radius
+        )
+        # Right corner
+        pygame.draw.circle(
+            self.screen,
+            CYAN,
+            (x + width // 2 - corner_radius, y + height // 2),
+            corner_radius
+        )
+        
+        # Create an extra wide smile curve at the bottom for laughing
+        smile_width = width - 6
+        smile_height = 10  # Taller smile curve
+        pygame.draw.ellipse(
+            self.screen,
+            CYAN,
+            (
+                x - smile_width // 2,
+                y + height - 4,
+                smile_width,
+                smile_height
+            ),
+            0
+        )
+        
+        # Add teeth-like segments using vertical lines for characteristic robot smile
+        num_teeth = 8  # Number of teeth segments
+        tooth_spacing = (width - 12) // num_teeth
+        for i in range(1, num_teeth):
+            tooth_x = x - width // 2 + 6 + (i * tooth_spacing)
+            pygame.draw.line(
+                self.screen,
+                BLACK,
+                (tooth_x, y + 3),
+                (tooth_x, y + height - 3),
+                2
+            )
+        
+        # Add inner highlight for depth
+        highlight_width = width - 8
+        highlight_height = 4
+        pygame.draw.rect(
+            self.screen,
+            WHITE,
+            (
+                x - highlight_width // 2,
+                y + 2,
+                highlight_width,
+                highlight_height
+            ),
+            0
+        )
+        
+        # Add extra glow effect for laughing
+        glow_surface = pygame.Surface((width + 15, height + 15))
+        glow_surface.set_alpha(35)  # Slightly more visible glow
+        glow_surface.fill(CYAN)
+        self.screen.blit(glow_surface, (x - width // 2 - 7, y - 7))
+        
+        # Add animated sparkle effect for extra expressiveness
+        current_time = time.time()
+        for i in range(3):  # 3 sparkles
+            sparkle_angle = (current_time * 10 + i * 2.1) % (2 * math.pi)  # Rotating sparkles
+            sparkle_radius = width // 3
+            sparkle_x = x + math.cos(sparkle_angle) * sparkle_radius
+            sparkle_y = y + height // 2 + math.sin(sparkle_angle) * (height // 4)
+            
+            # Draw small sparkle
+            pygame.draw.circle(
+                self.screen,
+                WHITE,
+                (int(sparkle_x), int(sparkle_y)),
+                2
+            )
+
     def _draw_d_shaped_mouth(self, x, y, width, height, curve):
         """Draw a proper D-shaped mouth with the specified curve"""
         # Create a proper D shape using multiple drawing elements
@@ -803,51 +886,28 @@ class RoboEyes:
     # Animation methods
     def blink(self, left_eye=True, right_eye=True):
         """Blink animation"""
-        if not self.is_blinking:
-            self.is_blinking = True
-            self.is_winking = False  # Not winking, normal blink
-            self.blink_start_time = time.time()
-        return True
+        return self.animations.blink()
         
     def wink(self, left_eye=True):
         """Wink animation (blink with only one eye)"""
-        if not self.is_blinking:
-            self.is_blinking = True
-            self.is_winking = True
-            self.wink_left_eye = left_eye  # Which eye to wink
-            self.blink_start_time = time.time()
-        return True
+        return self.animations.wink(left_eye)
 
     def anim_laugh(self):
         """Laughing animation"""
-        if not self.is_laughing:
-            self.is_laughing = True
-            self.laugh_start_time = time.time()
-        return True
+        return self.animations.anim_laugh()
 
     def anim_confused(self):
         """Confused animation"""
-        if not self.is_confused:
-            self.is_confused = True
-            self.confused_start_time = time.time()
-        return True
+        return self.animations.anim_confused()
 
     # Macro animators
     def set_auto_blinker(self, state, interval=3, variation=2):
         """Set auto blinker"""
-        self.auto_blinker = state
-        self.auto_blinker_interval = interval
-        self.auto_blinker_variation = variation
-        self.auto_blinker_last_time = time.time()
-        return True
+        return self.animations.set_auto_blinker(state, interval, variation)
 
     def set_idle_mode(self, state, interval=2, variation=2):
         """Set idle mode"""
-        self.idle_mode = state
-        self.idle_mode_interval = interval
-        self.idle_mode_variation = variation
-        self.idle_mode_last_time = time.time()
-        return True
+        return self.animations.set_idle_mode(state, interval, variation)
         
     def set_eye_shape(self, shape):
         """Set the eye shape"""

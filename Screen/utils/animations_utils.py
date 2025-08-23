@@ -148,13 +148,33 @@ class AnimationsHandler:
             progress = (current_time - self.laugh_start_time) / self.laugh_duration
             if progress >= 1.0:
                 self.is_laughing = False
+                # Reset to original positions and sizes
                 self.parent.eye_l_y_next = self.parent.eye_l_y
                 self.parent.eye_r_y_next = self.parent.eye_r_y
+                self.parent.eye_l_width = self.parent.eye_l_width_default
+                self.parent.eye_r_width = self.parent.eye_r_width_default
+                self.parent.eye_l_height = self.parent.eye_l_height_default
+                self.parent.eye_r_height = self.parent.eye_r_height_default
+                # Reset mouth laughing state
+                self.parent.is_laughing_mouth = False
             else:
-                # Oscillate the eyes up and down
-                offset = int(math.sin(progress * 10) * 5)
-                self.parent.eye_l_y_next = self.parent.eye_l_y + offset
-                self.parent.eye_r_y_next = self.parent.eye_r_y + offset
+                # Create multiple laugh effects:
+                # 1. Fast oscillation up and down
+                vertical_offset = int(math.sin(progress * 20) * 8)  # Faster and more pronounced
+                self.parent.eye_l_y_next = self.parent.eye_l_y + vertical_offset
+                self.parent.eye_r_y_next = self.parent.eye_r_y + vertical_offset
+                
+                # 2. Slight horizontal shake for more dynamic movement
+                horizontal_offset = int(math.sin(progress * 25) * 3)  # Small horizontal shake
+                self.parent.eye_l_x_next = self.parent.eye_l_x + horizontal_offset
+                self.parent.eye_r_x_next = self.parent.eye_r_x + horizontal_offset
+                
+                # 3. Dynamic size pulsing - eyes get bigger when laughing
+                size_multiplier = 1.0 + math.sin(progress * 15) * 0.3  # Pulsing between 0.7x and 1.3x size
+                self.parent.eye_l_width = int(self.parent.eye_l_width_default * size_multiplier)
+                self.parent.eye_r_width = int(self.parent.eye_r_width_default * size_multiplier)
+                self.parent.eye_l_height = int(self.parent.eye_l_height_default * size_multiplier)
+                self.parent.eye_r_height = int(self.parent.eye_r_height_default * size_multiplier)
         
         # Update confused animation
         if self.is_confused:
@@ -187,10 +207,12 @@ class AnimationsHandler:
         return True
     
     def anim_laugh(self):
-        """Laughing animation - eyes shaking up and down"""
+        """Laughing animation - eyes shaking up and down with size pulsing"""
         if not self.is_laughing:
             self.is_laughing = True
             self.laugh_start_time = time.time()
+            # Set parent laughing state for mouth expression
+            self.parent.is_laughing_mouth = True
         return True
     
     def anim_confused(self):
