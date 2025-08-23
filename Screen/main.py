@@ -54,7 +54,7 @@ def main():
         print("Press 1-5 to change mood (each has unique D-shaped mouth expression):")
         print("  1: DEFAULT - Large balanced D mouth with slight smile")
         print("  2: TIRED - Medium, slightly downturned D mouth")
-        print("  3: SAD - Medium, downturned D mouth")
+        print("  3: SAD - Medium, downturned D mouth with tears")
         print("  4: EXCITED - Extra wide, upturned D mouth (happy smile)")
         print("  5: ANGRY - Large, strongly downturned D mouth")
         print("Press B to blink")
@@ -85,7 +85,7 @@ def main():
                         print("Mood: TIRED - Medium, slightly downturned D mouth")
                     elif event.key == pygame.K_3:
                         eyes.set_mood(SAD)
-                        print("Mood: SAD - Medium, downturned D mouth")
+                        print("Mood: SAD - Medium, downturned D mouth with tears")
                     elif event.key == pygame.K_4:
                         eyes.set_mood(EXCITED)
                         print("Mood: EXCITED - Extra wide, upturned D mouth (happy smile)")

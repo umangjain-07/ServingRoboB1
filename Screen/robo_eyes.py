@@ -355,6 +355,15 @@ class RoboEyes:
             self.eye_r_width_current, self.eye_r_height_current
         )
         
+        # Draw tears for SAD mood
+        self.moods.draw_tears(
+            self.screen,
+            eye_l_x_current, eye_l_y_current,
+            eye_r_x_current, eye_r_y_current,
+            self.eye_l_width_current, self.eye_l_height_current,
+            self.eye_r_width_current, self.eye_r_height_current
+        )
+        
         # Draw tired eyelids if in TIRED mood
         if self.mood == TIRED and eyelids_tired_height > 0:
             # Left eye (or single eye in cyclops mode)

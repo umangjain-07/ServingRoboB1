@@ -43,14 +43,14 @@ class MoodsHandler:
         elif mood == SAD:
             # Sad shape for SAD mood
             self.parent.shapes.set_eye_shape("angry")
-            # Make eyes slightly narrower
+            # Make eyes smaller and narrower for sad look
             self.parent.shapes.set_width(
-                int(self.parent.eye_l_width_default * 0.9), 
-                int(self.parent.eye_r_width_default * 0.9)
+                int(self.parent.eye_l_width_default * 0.8), 
+                int(self.parent.eye_r_width_default * 0.8)
             )
             self.parent.shapes.set_height(
-                self.parent.eye_l_height_default, 
-                self.parent.eye_r_height_default
+                int(self.parent.eye_l_height_default * 0.85), 
+                int(self.parent.eye_r_height_default * 0.85)
             )
         elif mood == EXCITED:
             self.parent.shapes.set_eye_shape("pill")
@@ -90,6 +90,48 @@ class MoodsHandler:
             )
         
         return True
+
+    def draw_tears(self, screen, eye_l_x_current, eye_l_y_current, eye_r_x_current, eye_r_y_current, 
+                   eye_l_width_current, eye_l_height_current, eye_r_width_current, eye_r_height_current):
+        """Draw tears for SAD mood"""
+        if self.current_mood == SAD:
+            # Draw tear drops below each eye
+            tear_color = (0, 255, 255)  # Cyan color to match the eyes
+            
+            # Left eye tear
+            tear_l_x = eye_l_x_current + eye_l_width_current // 2
+            tear_l_y = eye_l_y_current + eye_l_height_current + 5
+            
+            # Draw tear drop (teardrop shape using circle and triangle)
+            pygame.draw.circle(
+                screen,
+                tear_color,
+                (tear_l_x, tear_l_y),
+                3,  # Tear radius
+                0
+            )
+            
+            # Right eye tear
+            tear_r_x = eye_r_x_current + eye_r_width_current // 2
+            tear_r_y = eye_r_y_current + eye_r_height_current + 5
+            
+            pygame.draw.circle(
+                screen,
+                tear_color,
+                (tear_r_x, tear_r_y),
+                3,  # Tear radius
+                0
+            )
+            
+            # Add subtle glow effect to tears
+            glow_surface = pygame.Surface((8, 8))
+            glow_surface.set_alpha(40)
+            glow_surface.fill(tear_color)
+            
+            # Left tear glow
+            screen.blit(glow_surface, (tear_l_x - 4, tear_l_y - 4))
+            # Right tear glow
+            screen.blit(glow_surface, (tear_r_x - 4, tear_r_y - 4))
 
     def get_current_mood(self):
         """Get the current mood value"""
